@@ -2,6 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Dashboard Registro Rendimiento RUBA</title>
   <style>
     * {
@@ -186,6 +187,20 @@
     body.dark-theme .info-box {
       background: rgba(21, 101, 192, 0.15);
       color: #64b5f6;
+    }
+    .config-warning {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      color: #856404;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      font-size: 12px;
+    }
+    .config-warning.error {
+      background: #f8d7da;
+      border-color: #f5c6cb;
+      color: #721c24;
     }
     .form-group {
       margin-bottom: 22px;
@@ -597,6 +612,11 @@
     </div>
     <!-- CONTENIDO -->
     <div class="content">
+      <!-- CONFIG WARNING -->
+      <div class="config-warning" id="configWarning" style="display: none;">
+        ⚙️ <strong>Configuración:</strong> Reemplaza <code>appsScriptId</code> en <code>config.json</code>
+      </div>
+
       <!-- TAB 1: REGISTRO -->
       <div id="registro" class="tab-content active">
         <div class="info-box">
@@ -755,49 +775,12 @@
       💼 Dashboard Rendimiento RUBA 2026
     </div>
   </div>
-  
-  <!-- CARGAR CONFIG.JS PRIMERO -->
-  <script src="config.js"></script>
-  
-  <!-- LUEGO EL SCRIPT PRINCIPAL QUE USA DEPLOY_CONFIG -->
+
   <script>
-    // ⭐ CONFIG - DEPLOY ID DESDE config.js
-    const APPS_SCRIPT_URL = `https://script.google.com/macros/s/${DEPLOY_CONFIG.deployId}/exec`;
-    
-    // ✨ JSONP HELPER - Para llamadas sin CORS
-    let jsonpCounter = 0;
-    function jsonpCall(action, data = {}) {
-      return new Promise((resolve, reject) => {
-        jsonpCounter++;
-        const callback = `jsonpCallback${jsonpCounter}`;
-        const timeout = setTimeout(() => {
-          delete window[callback];
-          reject(new Error('JSONP timeout'));
-        }, 10000);
-        
-        window[callback] = function(response) {
-          clearTimeout(timeout);
-          delete window[callback];
-          resolve(response);
-        };
-        
-        const params = new URLSearchParams({
-          action: action,
-          callback: callback,
-          ...data
-        });
-        
-        const script = document.createElement('script');
-        script.src = APPS_SCRIPT_URL + '?' + params.toString();
-        script.onerror = () => {
-          clearTimeout(timeout);
-          delete window[callback];
-          reject(new Error('JSONP error'));
-        };
-        document.head.appendChild(script);
-      });
-    }
-    
+    // 🔧 VARIABLES GLOBALES
+    let APPS_SCRIPT_URL = null;
+    let CONFIG_LOADED = false;
+
     // CACHE LOCAL
     let cacheRegistros = JSON.parse(localStorage.getItem('ruba-cache') || '[]');
     let datosGlobales = {
@@ -806,6 +789,43 @@
       entregables: [],
       tiempos: {}
     };
+
+    // ⭐ CARGAR CONFIGURACIÓN DESDE config.json
+    async function cargarConfig() {
+      try {
+        const response = await fetch('./config.json');
+        if (!response.ok) throw new Error('No se pudo cargar config.json');
+        
+        const config = await response.json();
+        
+        if (!config.appsScriptId || config.appsScriptId.includes('REEMPLAZAR')) {
+          mostrarAdviso('error');
+          return false;
+        }
+        
+        // Construir URL de Apps Script
+        APPS_SCRIPT_URL = `https://script.google.com/macros/d/${config.appsScriptId}/usercallback`;
+        CONFIG_LOADED = true;
+        
+        console.log('✅ Configuración cargada correctamente');
+        return true;
+      } catch (error) {
+        console.error('❌ Error al cargar config.json:', error);
+        mostrarAdviso('error');
+        return false;
+      }
+    }
+
+    function mostrarAdviso(tipo) {
+      const warning = document.getElementById('configWarning');
+      if (tipo === 'error') {
+        warning.classList.add('error');
+        warning.innerHTML = '❌ <strong>Error de configuración:</strong> Reemplaza <code>appsScriptId</code> en <code>config.json</code> con tu ID de Google Apps Script';
+        warning.style.display = 'block';
+      } else {
+        warning.style.display = 'none';
+      }
+    }
 
     // ⭐ CAMPO DE TIEMPO INTUITIVO
     const horasInput = document.getElementById('horasInput');
@@ -816,7 +836,6 @@
       return String(value || 0).padStart(2, '0');
     }
 
-    // ✨ REINICIALIZAR CAMPOS DE TIEMPO A '00'
     function resetearCamposTiempo() {
       horasInput.value = '00';
       minutosInput.value = '00';
@@ -904,7 +923,6 @@
       segundosInput.value = padZero(val);
     });
 
-    // Función para obtener tiempo completo
     function obtenerTiempoCompleto() {
       const h = padZero(horasInput.value);
       const m = padZero(minutosInput.value);
@@ -912,7 +930,6 @@
       return `${h}:${m}:${s}`;
     }
 
-    // Limpiar formulario
     document.getElementById('btnLimpiar').addEventListener('click', () => {
       resetearCamposTiempo();
       document.getElementById('hrsEstandar').textContent = '-';
@@ -1020,27 +1037,60 @@
     });
 
     // INICIALIZAR
-    document.addEventListener('DOMContentLoaded', function() {
-      // ⭐ Establecer valores por defecto en inputs de tiempo
+    document.addEventListener('DOMContentLoaded', async function() {
       resetearCamposTiempo();
-      
       initTheme();
-      cargarDatos();
+      
+      // Cargar configuración primero
+      const configOk = await cargarConfig();
+      
+      if (configOk) {
+        cargarDatos();
+        cargarComentarios();
+      }
+      
       actualizarBadgeCache();
       actualizarVistaCache();
-      cargarComentarios();
     });
 
     function cargarDatos() {
-      jsonpCall('obtenerDatos')
-        .then(datos => {
-          datosGlobales = datos;
-          configurarCombobox('cuenta', datos.cuentas, 'cuentaDropdown');
-          configurarCombobox('persona', datos.personas, 'personaDropdown');
-          configurarCombobox('entregable', datos.entregables, 'entregableDropdown');
-          configurarCombobox('comentarioPersona', datos.personas, 'comentarioPersonaDropdown');
-        })
-        .catch(error => console.error('Error cargando datos:', error));
+      if (!CONFIG_LOADED) {
+        mostrarMensaje('⚠️ Configuración no cargada', 'error');
+        return;
+      }
+      
+      callAppsScript('obtenerDatos', [], function(datos) {
+        datosGlobales = datos;
+        configurarCombobox('cuenta', datos.cuentas, 'cuentaDropdown');
+        configurarCombobox('persona', datos.personas, 'personaDropdown');
+        configurarCombobox('entregable', datos.entregables, 'entregableDropdown');
+        configurarCombobox('comentarioPersona', datos.personas, 'comentarioPersonaDropdown');
+      });
+    }
+
+    function callAppsScript(functionName, args, callback) {
+      if (!CONFIG_LOADED) {
+        mostrarMensaje('❌ Error de configuración', 'error');
+        return;
+      }
+      
+      const payload = {
+        action: functionName,
+        args: args
+      };
+      
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (callback) callback(data);
+      })
+      .catch(err => {
+        console.error('Error:', err);
+        mostrarMensaje('❌ Error de conexión con Google Sheets', 'error');
+      });
     }
 
     function configurarCombobox(inputId, opciones, dropdownId) {
@@ -1104,9 +1154,7 @@
       dropdown.classList.add('active');
     }
 
-    // CONVERTIR HORAS DECIMALES A DURACIÓN [h]:mm:ss
     function convertirDecimalADuracion(horas) {
-      // Convertir a segundos totales para evitar errores de precisión flotante
       const segundosTotales = Math.round(horas * 3600);
       const h = Math.floor(segundosTotales / 3600);
       const m = Math.floor((segundosTotales % 3600) / 60);
@@ -1114,7 +1162,6 @@
       return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
     }
 
-    // CALCULAR HRS ESTÁNDAR
     function actualizarHrsEstandar() {
       const entregable = document.getElementById('entregable').value.trim();
       const cantidad = document.getElementById('cantidad').value;
@@ -1133,7 +1180,6 @@
 
     document.getElementById('cantidad').addEventListener('input', actualizarHrsEstandar);
 
-    // GUARDAR EN CACHE (NO EN SHEET)
     document.getElementById('formRegistro').addEventListener('submit', function(e) {
       e.preventDefault();
       guardarEnCache_Handler();
@@ -1147,7 +1193,6 @@
       const hrsReales = obtenerTiempoCompleto();
       const notas = document.getElementById('notas').value.trim();
 
-      // Validar tiempo
       const regex = /^[0-9]{2}:[0-9]{2}:[0-9]{2}$/;
       if (!regex.test(hrsReales)) {
         mostrarMensaje('⚠️ Hrs Reales incompletas - completa hh:mm:ss', 'error');
@@ -1179,14 +1224,17 @@
       guardarEnCache(registro);
       mostrarMensaje(`✓ Agregado a cola (${cacheRegistros.length} registros)`, 'success');
       document.getElementById('formRegistro').reset();
-      // ✨ REINICIALIZAR CAMPOS DE TIEMPO A '00'
       resetearCamposTiempo();
       document.getElementById('hrsEstandar').textContent = '-';
       setTimeout(() => document.getElementById('status').classList.remove('success'), 3000);
     }
 
-    // GUARDAR BATCH EN SHEET
     document.getElementById('btnGuardarBatch').addEventListener('click', function() {
+      if (!CONFIG_LOADED) {
+        mostrarMensaje('❌ Error de configuración', 'error');
+        return;
+      }
+      
       if (cacheRegistros.length === 0) {
         mostrarMensaje('⚠️ No hay registros para guardar', 'error');
         return;
@@ -1195,87 +1243,25 @@
       document.getElementById('loading').classList.add('active');
       this.disabled = true;
 
-      // POST via iframe para evitar CORS
-      guardarRegistrosBatchViaIframe(cacheRegistros)
-        .then(resultado => {
-          document.getElementById('loading').classList.remove('active');
-          document.getElementById('btnGuardarBatch').disabled = false;
+      callAppsScript('guardarRegistrosBatch', [cacheRegistros], function(resultado) {
+        document.getElementById('loading').classList.remove('active');
+        document.getElementById('btnGuardarBatch').disabled = false;
 
-          if (resultado.success) {
-            mostrarMensaje(`✓ ${resultado.exitosos || resultado.total} registros guardados`, 'success');
-            cacheRegistros = [];
-            localStorage.setItem('ruba-cache', '[]');
-            actualizarBadgeCache();
-            actualizarVistaCache();
-            resetearCamposTiempo();
-            document.getElementById('hrsEstandar').textContent = '-';
-            document.getElementById('formRegistro').reset();
-            setTimeout(() => document.getElementById('status').classList.remove('success'), 4000);
-          } else {
-            mostrarMensaje('❌ Error: ' + resultado.error, 'error');
-          }
-        })
-        .catch(error => {
-          document.getElementById('loading').classList.remove('active');
-          document.getElementById('btnGuardarBatch').disabled = false;
-          mostrarMensaje('❌ Error: ' + error.message, 'error');
-        });
-    });
-
-    function guardarRegistrosBatchViaIframe(registros) {
-      return new Promise((resolve, reject) => {
-        const callbackName = `batchCallback${Date.now()}`;
-        const timeout = setTimeout(() => {
-          delete window[callbackName];
-          reject(new Error('Timeout guardando registros'));
-        }, 30000);
-
-        window[callbackName] = function(resultado) {
-          clearTimeout(timeout);
-          delete window[callbackName];
-          resolve(resultado);
-        };
-
-        // Crear iframe oculto
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.name = callbackName;
-        document.body.appendChild(iframe);
-
-        // Crear form
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = APPS_SCRIPT_URL;
-        form.target = callbackName;
-
-        // Agregar campos
-        const actionInput = document.createElement('input');
-        actionInput.type = 'hidden';
-        actionInput.name = 'action';
-        actionInput.value = 'guardarRegistrosBatch';
-        form.appendChild(actionInput);
-
-        const registrosInput = document.createElement('input');
-        registrosInput.type = 'hidden';
-        registrosInput.name = 'registros';
-        registrosInput.value = JSON.stringify(registros);
-        form.appendChild(registrosInput);
-
-        const callbackInput = document.createElement('input');
-        callbackInput.type = 'hidden';
-        callbackInput.name = 'callback';
-        callbackInput.value = callbackName;
-        form.appendChild(callbackInput);
-
-        document.body.appendChild(form);
-        form.submit();
-
-        setTimeout(() => {
-          form.remove();
-          iframe.remove();
-        }, 1000);
+        if (resultado.success) {
+          mostrarMensaje(`✓ ${resultado.exitosos} registros guardados en Google Sheets`, 'success');
+          cacheRegistros = [];
+          localStorage.setItem('ruba-cache', '[]');
+          actualizarBadgeCache();
+          actualizarVistaCache();
+          resetearCamposTiempo();
+          document.getElementById('hrsEstandar').textContent = '-';
+          document.getElementById('formRegistro').reset();
+          setTimeout(() => document.getElementById('status').classList.remove('success'), 4000);
+        } else {
+          mostrarMensaje('❌ Error: ' + resultado.error, 'error');
+        }
       });
-    }
+    });
 
     function mostrarMensaje(mensaje, tipo) {
       const status = document.getElementById('status');
@@ -1283,13 +1269,17 @@
       status.className = 'status ' + tipo;
     }
 
-    // COMENTARIOS
     document.getElementById('formComentario').addEventListener('submit', function(e) {
       e.preventDefault();
       guardarComentario_Handler();
     });
 
     function guardarComentario_Handler() {
+      if (!CONFIG_LOADED) {
+        mostrarMensajeComentario('❌ Error de configuración', 'error');
+        return;
+      }
+      
       const persona = document.getElementById('comentarioPersona').value.trim();
       const tipo = document.getElementById('comentarioTipo').value.trim();
       const texto = document.getElementById('comentarioTexto').value.trim();
@@ -1299,16 +1289,9 @@
         return;
       }
 
-      const callbackName = `comentarioCallback${Date.now()}`;
-      const timeout = setTimeout(() => {
-        delete window[callbackName];
-        mostrarMensajeComentario('❌ Timeout', 'error');
-      }, 10000);
+      const fecha = '';
 
-      window[callbackName] = function(resultado) {
-        clearTimeout(timeout);
-        delete window[callbackName];
-        
+      callAppsScript('guardarComentario', [fecha, persona, tipo, texto], function(resultado) {
         if (resultado.success) {
           mostrarMensajeComentario('✓ Comentario guardado', 'success');
           document.getElementById('formComentario').reset();
@@ -1317,39 +1300,15 @@
         } else {
           mostrarMensajeComentario('❌ Error: ' + resultado.error, 'error');
         }
-      };
-
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = APPS_SCRIPT_URL;
-      form.style.display = 'none';
-
-      const inputs = {
-        action: 'guardarComentario',
-        fecha: '',
-        persona: persona,
-        tipo: tipo,
-        comentario: texto,
-        callback: callbackName
-      };
-
-      Object.keys(inputs).forEach(key => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = key;
-        input.value = inputs[key];
-        form.appendChild(input);
       });
-
-      document.body.appendChild(form);
-      form.submit();
-      form.remove();
     }
 
     function cargarComentarios() {
-      jsonpCall('obtenerComentarios')
-        .then(comentarios => mostrarComentarios(comentarios))
-        .catch(error => console.error('Error cargando comentarios:', error));
+      if (!CONFIG_LOADED) return;
+      
+      callAppsScript('obtenerComentarios', [], function(comentarios) {
+        mostrarComentarios(comentarios);
+      });
     }
 
     function mostrarComentarios(comentarios) {
