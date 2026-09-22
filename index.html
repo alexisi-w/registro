@@ -984,9 +984,10 @@
     </div>
   </div>
 
-  <script src="https://script.google.com/macros/d/1uCqsdU9EITgU7LMHPApAfVWkmN4tMY4g1U2mrwOKZPU/usercodeappsscript?state=projects%2F-1%2FanalyzeFunctions"></script>
-  
   <script>
+    // ====== CONFIGURACIÓN: URL DEL WEB APP ======
+    // Reemplaza esto con tu URL real después de desplegar Código.gs como Web App
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_DEPLOY_ID/usable';
     // ====== CACHE INTELIGENTE CON EXPIRACIÓN ======
     const CACHE_EXPIRY = 24 * 60 * 60 * 1000;
     const INACTIVITY_RESET = 5 * 60 * 1000;
@@ -1010,26 +1011,32 @@
         e.preventDefault();
         const password = document.getElementById('loginPassword').value;
         
-        google.script.run
-          .withSuccessHandler(function(resultado) {
-            if (resultado.success) {
-              userAuthenticated = true;
-              localStorage.setItem('ruba-auth-time', Date.now().toString());
-              loginContainer.classList.add('hidden');
-              dashboardContainer.classList.remove('hidden');
-              cargarDatos();
-              actualizarBadgeCache();
-              actualizarVistaCache();
-              cargarComentarios();
-              setupCacheCleanup();
-            } else {
-              mostrarErrorLogin(resultado.error);
-            }
+        fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'validarCredenciales',
+            contrasena: password
           })
-          .withFailureHandler(function(error) {
-            mostrarErrorLogin('Error: ' + error);
-          })
-          .validarCredenciales(password);
+        })
+        .then(response => response.json())
+        .then(resultado => {
+          if (resultado.success) {
+            userAuthenticated = true;
+            localStorage.setItem('ruba-auth-time', Date.now().toString());
+            loginContainer.classList.add('hidden');
+            dashboardContainer.classList.remove('hidden');
+            cargarDatos();
+            actualizarBadgeCache();
+            actualizarVistaCache();
+            cargarComentarios();
+            setupCacheCleanup();
+          } else {
+            mostrarErrorLogin(resultado.error);
+          }
+        })
+        .catch(error => {
+          mostrarErrorLogin('Error: ' + error.message);
+        });
       });
       
       document.getElementById('btnLogout').addEventListener('click', logout);
@@ -1302,13 +1309,21 @@
 
     // ====== CARGAR DATOS ======
     function cargarDatos() {
-      google.script.run.withSuccessHandler(function(datos) {
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'obtenerDatos'
+        })
+      })
+      .then(response => response.json())
+      .then(datos => {
         datosGlobales = datos;
         configurarCombobox('cuenta', datos.cuentas, 'cuentaDropdown');
         configurarCombobox('persona', datos.personas, 'personaDropdown');
         configurarCombobox('entregable', datos.entregables, 'entregableDropdown');
         configurarCombobox('comentarioPersona', datos.personas, 'comentarioPersonaDropdown');
-      }).obtenerDatos();
+      })
+      .catch(error => console.error('Error cargando datos:', error));
     }
 
     function configurarCombobox(inputId, opciones, dropdownId) {
@@ -1458,31 +1473,37 @@
       document.getElementById('loading').classList.add('active');
       this.disabled = true;
 
-      google.script.run
-        .withSuccessHandler(function(resultado) {
-          document.getElementById('loading').classList.remove('active');
-          document.getElementById('btnGuardarBatch').disabled = false;
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'guardarRegistrosBatch',
+          registros: cacheRegistros
+        })
+      })
+      .then(response => response.json())
+      .then(resultado => {
+        document.getElementById('loading').classList.remove('active');
+        document.getElementById('btnGuardarBatch').disabled = false;
 
-          if (resultado.success) {
-            mostrarMensaje(`✓ ${resultado.total} registros guardados en Google Sheets`, 'success');
-            cacheRegistros = [];
-            saveCache();
-            actualizarBadgeCache();
-            actualizarVistaCache();
-            resetearCamposTiempo();
-            document.getElementById('hrsEstandar').textContent = '-';
-            document.getElementById('formRegistro').reset();
-            setTimeout(() => document.getElementById('status').classList.remove('success'), 4000);
-          } else {
-            mostrarMensaje('❌ Error: ' + resultado.error, 'error');
-          }
-        })
-        .withFailureHandler(function(error) {
-          document.getElementById('loading').classList.remove('active');
-          document.getElementById('btnGuardarBatch').disabled = false;
-          mostrarMensaje('❌ Error: ' + error, 'error');
-        })
-        .guardarRegistrosBatch(cacheRegistros);
+        if (resultado.success) {
+          mostrarMensaje(`✓ ${resultado.exitosos} registros guardados en Google Sheets`, 'success');
+          cacheRegistros = [];
+          saveCache();
+          actualizarBadgeCache();
+          actualizarVistaCache();
+          resetearCamposTiempo();
+          document.getElementById('hrsEstandar').textContent = '-';
+          document.getElementById('formRegistro').reset();
+          setTimeout(() => document.getElementById('status').classList.remove('success'), 4000);
+        } else {
+          mostrarMensaje('❌ Error: ' + resultado.error, 'error');
+        }
+      })
+      .catch(error => {
+        document.getElementById('loading').classList.remove('active');
+        document.getElementById('btnGuardarBatch').disabled = false;
+        mostrarMensaje('❌ Error: ' + error.message, 'error');
+      });
     });
 
     function mostrarMensaje(mensaje, tipo) {
@@ -1509,27 +1530,44 @@
 
       const fecha = '';
 
-      google.script.run
-        .withSuccessHandler(function(resultado) {
-          if (resultado.success) {
-            mostrarMensajeComentario('✓ Comentario guardado', 'success');
-            document.getElementById('formComentario').reset();
-            cargarComentarios();
-            setTimeout(() => document.getElementById('statusComentario').classList.remove('success'), 3000);
-          } else {
-            mostrarMensajeComentario('❌ Error: ' + resultado.error, 'error');
-          }
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'guardarComentario',
+          fecha: fecha,
+          persona: persona,
+          tipo: tipo,
+          comentario: texto
         })
-        .withFailureHandler(function(error) {
-          mostrarMensajeComentario('❌ Error: ' + error, 'error');
-        })
-        .guardarComentario(fecha, persona, tipo, texto);
+      })
+      .then(response => response.json())
+      .then(resultado => {
+        if (resultado.success) {
+          mostrarMensajeComentario('✓ Comentario guardado', 'success');
+          document.getElementById('formComentario').reset();
+          cargarComentarios();
+          setTimeout(() => document.getElementById('statusComentario').classList.remove('success'), 3000);
+        } else {
+          mostrarMensajeComentario('❌ Error: ' + resultado.error, 'error');
+        }
+      })
+      .catch(error => {
+        mostrarMensajeComentario('❌ Error: ' + error.message, 'error');
+      });
     }
 
     function cargarComentarios() {
-      google.script.run.withSuccessHandler(function(comentarios) {
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'obtenerComentarios'
+        })
+      })
+      .then(response => response.json())
+      .then(comentarios => {
         mostrarComentarios(comentarios);
-      }).obtenerComentarios();
+      })
+      .catch(error => console.error('Error cargando comentarios:', error));
     }
 
     function mostrarComentarios(comentarios) {
