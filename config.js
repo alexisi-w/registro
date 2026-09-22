@@ -4,5 +4,5 @@
 // Solo cambia el deployId aquí cuando despliegues
 
 const DEPLOY_CONFIG = {
-  deployId: 'AKfycbyKOgZqKuppWZS_Z7mqdRYkLzoq39OdhzSVkE5F7w4xJcmVTOcMeoNIorMxVMvYSVXA'
+  deployId: 'AKfycbwcf61XQ3iC2ccIcq36WZs_N3up-nblOi1S1w2hvuSc4fA6EL3EUU54zvRyrDp7mTwG'
 };
