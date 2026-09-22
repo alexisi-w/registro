@@ -986,8 +986,10 @@
 
   <script>
     // ====== CONFIGURACIÓN: URL DEL WEB APP ======
-    // Ahora servido desde el mismo Apps Script (doGet), sin CORS
-    const APPS_SCRIPT_URL = ScriptApp.getService().getUrl();
+    // Deploy activo de Apps Script (sin CORS con text/plain)
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyZ8O8C_Nji0RJBJFUI1Hx9CROxCcc49bvw0KXVdIn_T1JrjZ0Mf6jNPq1H3jeaW2JQ/exec';
+    
+    // Dashboard abierto directo (sin login)
     // ====== CACHE INTELIGENTE CON EXPIRACIÓN ======
     const CACHE_EXPIRY = 24 * 60 * 60 * 1000;
     const INACTIVITY_RESET = 5 * 60 * 1000;
@@ -1002,44 +1004,23 @@
     let userAuthenticated = false;
     let inactivityTimer = null;
 
-    // ====== AUTENTICACIÓN ======
-    function initAuth() {
-      const loginContainer = document.getElementById('loginContainer');
-      const dashboardContainer = document.getElementById('dashboardContainer');
+    // ====== INICIALIZAR SIN LOGIN ======
+    function initSinLogin() {
+      // El dashboard se muestra directo
+      document.getElementById('dashboardContainer').classList.remove('hidden');
+      document.getElementById('loginContainer').classList.add('hidden');
       
-      document.getElementById('loginForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const password = document.getElementById('loginPassword').value;
-        
-        fetch(APPS_SCRIPT_URL, {
-          method: 'POST',
-          body: JSON.stringify({
-            action: 'validarCredenciales',
-            contrasena: password
-          })
-        })
-        .then(response => response.json())
-        .then(resultado => {
-          if (resultado.success) {
-            userAuthenticated = true;
-            localStorage.setItem('ruba-auth-time', Date.now().toString());
-            loginContainer.classList.add('hidden');
-            dashboardContainer.classList.remove('hidden');
-            cargarDatos();
-            actualizarBadgeCache();
-            actualizarVistaCache();
-            cargarComentarios();
-            setupCacheCleanup();
-          } else {
-            mostrarErrorLogin(resultado.error);
-          }
-        })
-        .catch(error => {
-          mostrarErrorLogin('Error: ' + error.message);
-        });
+      // Cargar datos inmediatamente
+      cargarDatos();
+      actualizarBadgeCache();
+      actualizarVistaCache();
+      cargarComentarios();
+      setupCacheCleanup();
+      
+      // Setup eventos
+      document.getElementById('btnLogout').addEventListener('click', function() {
+        location.reload();
       });
-      
-      document.getElementById('btnLogout').addEventListener('click', logout);
     }
 
     function mostrarErrorLogin(error) {
@@ -1311,6 +1292,9 @@
     function cargarDatos() {
       fetch(APPS_SCRIPT_URL, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain'
+        },
         body: JSON.stringify({
           action: 'obtenerDatos'
         })
@@ -1475,6 +1459,9 @@
 
       fetch(APPS_SCRIPT_URL, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain'
+        },
         body: JSON.stringify({
           action: 'guardarRegistrosBatch',
           registros: cacheRegistros
@@ -1532,6 +1519,9 @@
 
       fetch(APPS_SCRIPT_URL, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain'
+        },
         body: JSON.stringify({
           action: 'guardarComentario',
           fecha: fecha,
@@ -1559,6 +1549,9 @@
     function cargarComentarios() {
       fetch(APPS_SCRIPT_URL, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain'
+        },
         body: JSON.stringify({
           action: 'obtenerComentarios'
         })
@@ -1599,7 +1592,7 @@
     document.addEventListener('DOMContentLoaded', function() {
       initTheme();
       loadCache();
-      initAuth();
+      initSinLogin();
       resetearCamposTiempo();
     });
   </script>
