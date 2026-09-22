@@ -249,26 +249,6 @@
       color: white;
     }
     
-    .logout-btn {
-      width: 36px;
-      height: 36px;
-      border: 2px solid #e74c3c;
-      background: transparent;
-      color: #e74c3c;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.3s ease;
-    }
-    
-    .logout-btn:hover {
-      background: #e74c3c;
-      color: white;
-    }
-    
     .tabs {
       display: flex;
       border-bottom: 2px solid var(--border-color);
@@ -809,6 +789,8 @@
         <div class="theme-toggle">
           <button class="theme-btn light active" title="Tema claro" id="btnLight">☀️</button>
           <button class="theme-btn dark" title="Tema oscuro" id="btnDark">🌙</button>
+        </div>
+      </div>
     </div>
     
     <!-- TABS -->
@@ -984,7 +966,7 @@
   <script>
     // ====== CONFIGURACIÓN: URL DEL WEB APP ======
     // Deploy activo de Apps Script (sin CORS con text/plain)
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1QtFoKi6vD9apltdkhgY6b4f1kjKmQvWASC6T2F-LS-plpuNfXE22FkqvcO5Fzkta/exec';
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyZ8O8C_Nji0RJBJFUI1Hx9CROxCcc49bvw0KXVdIn_T1JrjZ0Mf6jNPq1H3jeaW2JQ/exec';
     
     // Dashboard abierto directo (sin login)
     // ====== CACHE INTELIGENTE CON EXPIRACIÓN ======
@@ -1013,9 +995,6 @@
       actualizarVistaCache();
       cargarComentarios();
       setupCacheCleanup();
-      
-      // Setup eventos
-      });
     }
 
     function mostrarErrorLogin(error) {
