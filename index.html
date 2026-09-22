@@ -1015,6 +1015,9 @@
         
         fetch(APPS_SCRIPT_URL, {
           method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain'
+          },
           body: JSON.stringify({
             action: 'validarCredenciales',
             contrasena: password
@@ -1313,6 +1316,9 @@
     function cargarDatos() {
       fetch(APPS_SCRIPT_URL, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain'
+        },
         body: JSON.stringify({
           action: 'obtenerDatos'
         })
@@ -1477,6 +1483,9 @@
 
       fetch(APPS_SCRIPT_URL, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain'
+        },
         body: JSON.stringify({
           action: 'guardarRegistrosBatch',
           registros: cacheRegistros
@@ -1534,6 +1543,9 @@
 
       fetch(APPS_SCRIPT_URL, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain'
+        },
         body: JSON.stringify({
           action: 'guardarComentario',
           fecha: fecha,
@@ -1561,6 +1573,9 @@
     function cargarComentarios() {
       fetch(APPS_SCRIPT_URL, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain'
+        },
         body: JSON.stringify({
           action: 'obtenerComentarios'
         })
