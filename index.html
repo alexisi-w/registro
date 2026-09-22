@@ -757,7 +757,7 @@
   </div>
   <script>
     // ====== CONFIGURACIÓN: URL DEL WEB APP ======
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1zXOrZc9HaKqI7Jclk9pQLqD70DR4WWhz-hVhDdmK6SG87oUew2ju-i3TakkgDpNW/exec';
+    const APPS_SCRIPT_URL = `https://script.google.com/macros/s/${DEPLOY_CONFIG.deployId}/exec`;
 
     // CACHE LOCAL
     let cacheRegistros = JSON.parse(localStorage.getItem('ruba-cache') || '[]');
