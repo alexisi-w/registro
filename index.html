@@ -275,12 +275,6 @@
       font-weight: 700;
       color: var(--color-ruba);
     }
-    .hrs-reales-helper {
-      font-size: 11px;
-      color: var(--text-secondary);
-      margin-top: 4px;
-      font-style: italic;
-    }
     .time-input-helper {
       background: rgba(255, 107, 53, 0.05);
       padding: 8px 12px;
@@ -572,12 +566,9 @@
 </head>
 <body class="light-theme">
   <div class="container">
-    <!-- HEADER -->
     <div class="header">
       <div class="header-left">
-        <img class="logo" id="logoIW"
-             src="https://res.cloudinary.com/kiaocntw/image/upload/v1788488007/IW_logo_2026_isotipo_negro.png"
-             alt="IW Digital">
+        <img class="logo" id="logoIW" src="https://res.cloudinary.com/kiaocntw/image/upload/v1788488007/IW_logo_2026_isotipo_negro.png" alt="IW Digital">
         <div class="header-content">
           <h1>📊 Registro</h1>
           <p>IW Digital × RUBA</p>
@@ -589,15 +580,12 @@
         <button class="theme-btn dark" title="Tema oscuro" id="btnDark">🌙</button>
       </div>
     </div>
-    <!-- TABS -->
     <div class="tabs">
       <button class="tab-btn active" data-tab="registro">📝 Registro</button>
       <button class="tab-btn" data-tab="cache">💾 En Cola</button>
       <button class="tab-btn" data-tab="comentarios">💬 Comentarios</button>
     </div>
-    <!-- CONTENIDO -->
     <div class="content">
-      <!-- TAB 1: REGISTRO -->
       <div id="registro" class="tab-content active">
         <div class="info-box">
           ✓ La fecha y hora se registran automáticamente • Hrs Reales: solo números
@@ -642,12 +630,10 @@
             <label for="cantidad">Cantidad *</label>
             <input type="number" id="cantidad" min="1" required placeholder="">
           </div>
-          <!-- Hrs Estándar -->
           <div class="hrs-estandar-box">
             <label for="hrsEstandar">Hrs Estándar (Calculado)</label>
             <div class="hrs-estandar-value" id="hrsEstandar">-</div>
           </div>
-          <!-- ⭐ CAMPO DE TIEMPO INTUITIVO -->
           <div class="form-group">
             <label for="hrsReales">Hrs Reales (Duración) *</label>
             <div class="time-picker-wrapper" id="timePicker">
@@ -696,7 +682,6 @@
           </div>
         </form>
       </div>
-      <!-- TAB 2: CACHE -->
       <div id="cache" class="tab-content">
         <div class="info-box">
           📋 Registros en cache local • Se guardarán en Google Sheets cuando hagas clic en "Guardar Todo"
@@ -707,7 +692,6 @@
           </p>
         </div>
       </div>
-      <!-- TAB 3: COMENTARIOS -->
       <div id="comentarios" class="tab-content">
         <div class="info-box">
           💬 Agrega comentarios o notas sobre el rendimiento del squad
@@ -755,21 +739,17 @@
       💼 Dashboard Rendimiento RUBA 2026
     </div>
   </div>
+
+  <!-- SCRIPT 1: Cargar config.js -->
   <script src="config.js"></script>
+
+  <!-- SCRIPT 2: Toda la lógica (DESPUÉS de config.js) -->
   <script>
-    // ====== CONFIGURACIÓN: URL DEL WEB APP (desde config.js) ======
     const APPS_SCRIPT_URL = `https://script.google.com/macros/s/${DEPLOY_CONFIG.deployId}/exec`;
-
-    // CACHE LOCAL
+    
     let cacheRegistros = JSON.parse(localStorage.getItem('ruba-cache') || '[]');
-    let datosGlobales = {
-      cuentas: [],
-      personas: [],
-      entregables: [],
-      tiempos: {}
-    };
+    let datosGlobales = { cuentas: [], personas: [], entregables: [], tiempos: {} };
 
-    // ⭐ CAMPO DE TIEMPO INTUITIVO
     const horasInput = document.getElementById('horasInput');
     const minutosInput = document.getElementById('minutosInput');
     const segundosInput = document.getElementById('segundosInput');
@@ -778,14 +758,12 @@
       return String(value || 0).padStart(2, '0');
     }
 
-    // ✨ REINICIALIZAR CAMPOS DE TIEMPO A '00'
     function resetearCamposTiempo() {
       horasInput.value = '00';
       minutosInput.value = '00';
       segundosInput.value = '00';
     }
 
-    // Eventos para horas
     horasInput.addEventListener('input', function() {
       if (this.value === '') return;
       let val = parseInt(this.value);
@@ -812,7 +790,6 @@
       horasInput.value = padZero(val);
     });
 
-    // Eventos para minutos
     minutosInput.addEventListener('input', function() {
       if (this.value === '') return;
       let val = parseInt(this.value);
@@ -839,7 +816,6 @@
       minutosInput.value = padZero(val);
     });
 
-    // Eventos para segundos
     segundosInput.addEventListener('input', function() {
       if (this.value === '') return;
       let val = parseInt(this.value);
@@ -866,7 +842,6 @@
       segundosInput.value = padZero(val);
     });
 
-    // Función para obtener tiempo completo
     function obtenerTiempoCompleto() {
       const h = padZero(horasInput.value);
       const m = padZero(minutosInput.value);
@@ -874,7 +849,6 @@
       return `${h}:${m}:${s}`;
     }
 
-    // Limpiar formulario
     document.getElementById('btnLimpiar').addEventListener('click', () => {
       resetearCamposTiempo();
       document.getElementById('hrsEstandar').textContent = '-';
@@ -885,7 +859,6 @@
       const count = cacheRegistros.length;
       badge.textContent = count === 0 ? '0 en cola' : `${count} en cola`;
       document.getElementById('btnGuardarBatch').disabled = count === 0;
-
       if (count > 0) {
         badge.style.background = 'var(--color-success)';
       } else {
@@ -909,12 +882,10 @@
 
     function actualizarVistaCache() {
       const cacheList = document.getElementById('cacheList');
-
       if (cacheRegistros.length === 0) {
         cacheList.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 20px; font-size: 13px;">No hay registros en cola</p>';
         return;
       }
-
       cacheList.innerHTML = cacheRegistros.map((reg, idx) => `
         <div class="cache-item">
           <div class="cache-item-info">
@@ -926,7 +897,6 @@
       `).join('');
     }
 
-    // TEMAS
     function initTheme() {
       const savedTheme = localStorage.getItem('ruba-theme') || 'light';
       applyTheme(savedTheme);
@@ -937,7 +907,6 @@
       const btnLight = document.getElementById('btnLight');
       const btnDark = document.getElementById('btnDark');
       const logoIW = document.getElementById('logoIW');
-
       if (theme === 'dark') {
         body.classList.remove('light-theme');
         body.classList.add('dark-theme');
@@ -957,7 +926,6 @@
     document.getElementById('btnLight').addEventListener('click', () => applyTheme('light'));
     document.getElementById('btnDark').addEventListener('click', () => applyTheme('dark'));
 
-    // TABS
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', function() {
         const tabName = this.getAttribute('data-tab');
@@ -968,7 +936,6 @@
       });
     });
 
-    // FECHA MANUAL
     document.getElementById('usarFechaManual').addEventListener('change', function() {
       const div = document.getElementById('fechaHoraManual');
       if (this.checked) {
@@ -981,7 +948,6 @@
       }
     });
 
-    // INICIALIZAR
     document.addEventListener('DOMContentLoaded', function() {
       resetearCamposTiempo();
       initTheme();
@@ -994,12 +960,8 @@
     function cargarDatos() {
       fetch(APPS_SCRIPT_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'text/plain'
-        },
-        body: JSON.stringify({
-          action: 'obtenerDatos'
-        })
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'obtenerDatos' })
       })
       .then(response => response.json())
       .then(datos => {
@@ -1009,17 +971,15 @@
         configurarCombobox('entregable', datos.entregables, 'entregableDropdown');
         configurarCombobox('comentarioPersona', datos.personas, 'comentarioPersonaDropdown');
       })
-      .catch(error => console.error('Error cargando datos:', error));
+      .catch(error => console.error('Error:', error));
     }
 
     function configurarCombobox(inputId, opciones, dropdownId) {
       const input = document.getElementById(inputId);
       const dropdown = document.getElementById(dropdownId);
-
       input.addEventListener('focus', function() {
         mostrarTodasOpciones(dropdown, opciones);
       });
-
       input.addEventListener('input', function() {
         const valor = this.value.toLowerCase().trim();
         if (valor.length === 0) {
@@ -1029,7 +989,6 @@
           mostrarOpciones(dropdown, filtrados, input);
         }
       });
-
       input.addEventListener('blur', function() {
         setTimeout(() => dropdown.classList.remove('active'), 150);
       });
@@ -1073,7 +1032,6 @@
       dropdown.classList.add('active');
     }
 
-    // CONVERTIR HORAS DECIMALES A DURACIÓN [h]:mm:ss
     function convertirDecimalADuracion(horas) {
       const segundosTotales = Math.round(horas * 3600);
       const h = Math.floor(segundosTotales / 3600);
@@ -1082,17 +1040,14 @@
       return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
     }
 
-    // CALCULAR HRS ESTÁNDAR
     function actualizarHrsEstandar() {
       const entregable = document.getElementById('entregable').value.trim();
       const cantidad = document.getElementById('cantidad').value;
       const hrsBox = document.getElementById('hrsEstandar');
-
       if (!entregable || !cantidad) {
         hrsBox.textContent = '-';
         return;
       }
-
       const hrsBase = datosGlobales.tiempos[entregable] || 0;
       const hrsTotal = hrsBase * parseFloat(cantidad);
       const duracion = convertirDecimalADuracion(hrsTotal);
@@ -1101,7 +1056,6 @@
 
     document.getElementById('cantidad').addEventListener('input', actualizarHrsEstandar);
 
-    // GUARDAR EN CACHE (NO EN SHEET)
     document.getElementById('formRegistro').addEventListener('submit', function(e) {
       e.preventDefault();
       guardarEnCache_Handler();
@@ -1114,35 +1068,22 @@
       const cantidad = document.getElementById('cantidad').value;
       const hrsReales = obtenerTiempoCompleto();
       const notas = document.getElementById('notas').value.trim();
-
       const regex = /^[0-9]{2}:[0-9]{2}:[0-9]{2}$/;
       if (!regex.test(hrsReales)) {
-        mostrarMensaje('⚠️ Hrs Reales incompletas - completa hh:mm:ss', 'error');
+        mostrarMensaje('⚠️ Hrs Reales incompletas', 'error');
         return;
       }
-
       if (!cuenta || !persona || !entregable || !cantidad) {
-        mostrarMensaje('⚠️ Por favor completa todos los campos requeridos', 'error');
+        mostrarMensaje('⚠️ Completa todos los campos', 'error');
         return;
       }
-
       let fechaHoraManual = '';
       if (document.getElementById('usarFechaManual').checked) {
         const fecha = document.getElementById('fecha').value;
         const hora = document.getElementById('hora').value;
         fechaHoraManual = `${fecha.split('-').reverse().join('/')} ${hora}`;
       }
-
-      const registro = {
-        cuenta,
-        persona,
-        entregable,
-        cantidad: parseInt(cantidad),
-        fechaHoraManual,
-        hrsReales,
-        notas
-      };
-
+      const registro = { cuenta, persona, entregable, cantidad: parseInt(cantidad), fechaHoraManual, hrsReales, notas };
       guardarEnCache(registro);
       mostrarMensaje(`✓ Agregado a cola (${cacheRegistros.length} registros)`, 'success');
       document.getElementById('formRegistro').reset();
@@ -1151,33 +1092,24 @@
       setTimeout(() => document.getElementById('status').classList.remove('success'), 3000);
     }
 
-    // GUARDAR BATCH EN SHEET
     document.getElementById('btnGuardarBatch').addEventListener('click', function() {
       if (cacheRegistros.length === 0) {
-        mostrarMensaje('⚠️ No hay registros para guardar', 'error');
+        mostrarMensaje('⚠️ No hay registros', 'error');
         return;
       }
-
       document.getElementById('loading').classList.add('active');
       this.disabled = true;
-
       fetch(APPS_SCRIPT_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'text/plain'
-        },
-        body: JSON.stringify({
-          action: 'guardarRegistrosBatch',
-          registros: cacheRegistros
-        })
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'guardarRegistrosBatch', registros: cacheRegistros })
       })
       .then(response => response.json())
       .then(resultado => {
         document.getElementById('loading').classList.remove('active');
         document.getElementById('btnGuardarBatch').disabled = false;
-
         if (resultado.success) {
-          mostrarMensaje(`✓ ${resultado.exitosos} registros guardados en Google Sheets`, 'success');
+          mostrarMensaje(`✓ ${resultado.exitosos} registros guardados`, 'success');
           cacheRegistros = [];
           localStorage.setItem('ruba-cache', '[]');
           actualizarBadgeCache();
@@ -1185,7 +1117,6 @@
           resetearCamposTiempo();
           document.getElementById('hrsEstandar').textContent = '-';
           document.getElementById('formRegistro').reset();
-          setTimeout(() => document.getElementById('status').classList.remove('success'), 4000);
         } else {
           mostrarMensaje('❌ Error: ' + resultado.error, 'error');
         }
@@ -1193,7 +1124,7 @@
       .catch(error => {
         document.getElementById('loading').classList.remove('active');
         document.getElementById('btnGuardarBatch').disabled = false;
-        mostrarMensaje('❌ Error: ' + error.message, 'error');
+        mostrarMensaje('❌ Error: ' + error, 'error');
       });
     });
 
@@ -1203,7 +1134,6 @@
       status.className = 'status ' + tipo;
     }
 
-    // COMENTARIOS
     document.getElementById('formComentario').addEventListener('submit', function(e) {
       e.preventDefault();
       guardarComentario_Handler();
@@ -1213,72 +1143,49 @@
       const persona = document.getElementById('comentarioPersona').value.trim();
       const tipo = document.getElementById('comentarioTipo').value.trim();
       const texto = document.getElementById('comentarioTexto').value.trim();
-
       if (!persona || !tipo || !texto) {
         mostrarMensajeComentario('⚠️ Completa todos los campos', 'error');
         return;
       }
-
-      const fecha = '';
-
       fetch(APPS_SCRIPT_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'text/plain'
-        },
-        body: JSON.stringify({
-          action: 'guardarComentario',
-          fecha: fecha,
-          persona: persona,
-          tipo: tipo,
-          comentario: texto
-        })
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'guardarComentario', fecha: '', persona, tipo, comentario: texto })
       })
       .then(response => response.json())
       .then(resultado => {
         if (resultado.success) {
-          mostrarMensajeComentario('✓ Comentario guardado', 'success');
+          mostrarMensajeComentario('✓ Guardado', 'success');
           document.getElementById('formComentario').reset();
           cargarComentarios();
-          setTimeout(() => document.getElementById('statusComentario').classList.remove('success'), 3000);
         } else {
-          mostrarMensajeComentario('❌ Error: ' + resultado.error, 'error');
+          mostrarMensajeComentario('❌ Error', 'error');
         }
       })
-      .catch(error => {
-        mostrarMensajeComentario('❌ Error: ' + error.message, 'error');
-      });
+      .catch(error => mostrarMensajeComentario('❌ Error', 'error'));
     }
 
     function cargarComentarios() {
       fetch(APPS_SCRIPT_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'text/plain'
-        },
-        body: JSON.stringify({
-          action: 'obtenerComentarios'
-        })
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'obtenerComentarios' })
       })
       .then(response => response.json())
-      .then(comentarios => {
-        mostrarComentarios(comentarios);
-      })
-      .catch(error => console.error('Error cargando comentarios:', error));
+      .then(comentarios => mostrarComentarios(comentarios))
+      .catch(error => console.error('Error:', error));
     }
 
     function mostrarComentarios(comentarios) {
       const comentariosList = document.getElementById('comentariosList');
-
       if (!comentarios || comentarios.length === 0) {
-        comentariosList.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 20px; font-size: 13px;">No hay comentarios aún</p>';
+        comentariosList.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 20px; font-size: 13px;">No hay comentarios</p>';
         return;
       }
-
       comentariosList.innerHTML = comentarios.reverse().map((com) => `
         <div class="cache-item">
           <div class="cache-item-info">
-            <strong>${com.persona}</strong> - <span style="font-size: 11px; color: var(--text-secondary);">${com.fecha}</span><br>
+            <strong>${com.persona}</strong> - <span style="font-size: 11px;">${com.fecha}</span><br>
             <span style="color: var(--color-iw); font-weight: 600;">${com.tipo}</span><br>
             ${com.comentario}
           </div>
